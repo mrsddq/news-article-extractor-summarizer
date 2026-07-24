@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "news-article-extractor-summarizer"
+version = "0.1.0"
+description = "Safe news extraction and extractive summarization service"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1"]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.28,<1", "pytest>=8,<10", "ruff>=0.9,<1"]
+
+[project.scripts]
+news-summary = "news_summarizer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/news_summarizer"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
