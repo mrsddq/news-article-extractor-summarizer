@@ -26,7 +26,7 @@ def extract(request: ExtractRequest) -> dict[str, object]:
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(502, f"Could not fetch article: {exc}") from exc
+        raise HTTPException(502, "Could not fetch article from the upstream source") from exc
     return {
         "url": article.url,
         "title": article.title,
