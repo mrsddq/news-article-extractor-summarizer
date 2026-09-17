@@ -77,7 +77,7 @@ class ArticleParser(HTMLParser):
 
 def _validate_public_url(url: str) -> None:
     parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username:
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username is not None or parsed.password is not None:
         raise ValueError("URL must be a public HTTP(S) address without credentials")
     if parsed.hostname.lower() == "localhost":
         raise ValueError("Local addresses are not allowed")
@@ -85,6 +85,8 @@ def _validate_public_url(url: str) -> None:
         addresses = {item[4][0] for item in socket.getaddrinfo(parsed.hostname, parsed.port or 443)}
     except socket.gaierror as exc:
         raise ValueError("Hostname could not be resolved") from exc
+    if not addresses:
+        raise ValueError("Hostname has no usable addresses")
     for address in addresses:
         ip = ipaddress.ip_address(address)
         if not ip.is_global:
@@ -111,10 +113,20 @@ def parse_article(html_text: str, url: str) -> Article:
     )
 
 
+class PublicRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Reject disallowed destinations before urllib issues the redirect request."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _validate_public_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def extract_article(url: str, timeout: float = 10.0) -> Article:
     _validate_public_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": "NewsSummarizer/0.1 (+https://github.com/mrsddq)"})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    # Do not inherit an ambient proxy that could resolve destinations differently.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), PublicRedirectHandler())
+    with opener.open(request, timeout=timeout) as response:
         final_url = response.geturl()
         _validate_public_url(final_url)
         content_type = response.headers.get_content_type()
