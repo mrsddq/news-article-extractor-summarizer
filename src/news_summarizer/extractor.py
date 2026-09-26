@@ -38,6 +38,8 @@ class ArticleParser(HTMLParser):
             self._ignored_depth += 1
         if self._ignored_depth:
             return
+        if tag == "br" and self._paragraph_depth:
+            self._buffer.append(" ")
         if tag == "title":
             self._capture_title = True
         if tag == "p":

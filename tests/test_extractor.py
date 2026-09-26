@@ -35,3 +35,9 @@ def test_private_or_unsupported_urls_are_rejected(url):
     with pytest.raises(ValueError):
         _validate_public_url(url)
 
+def test_line_breaks_preserve_word_boundaries():
+    article = parse_article(
+        "<p>The city opened a new library.<br>Residents welcomed the project.</p>",
+        "https://example.com/story",
+    )
+    assert article.text == "The city opened a new library. Residents welcomed the project."
